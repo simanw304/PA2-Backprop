@@ -18,6 +18,10 @@ def softmax(x):
   """
   Write the code for softmax activation function that takes in a numpy array and returns a numpy array.
   """
+  if x.ndim != 1:
+        output = (np.exp(x)/ np.array([np.sum(np.exp(x),axis=1)]).T)
+  else:
+        output= np.exp(x)/np.sum(np.exp(x))
   return output
 
 
@@ -83,39 +87,42 @@ class Activation:
     Write the code for sigmoid activation function that takes in a numpy array and returns a numpy array.
     """
     self.x = x
-    return output
+    return 1 / (1 + np.exp(-x))
 
   def tanh(self, x):
     """
     Write the code for tanh activation function that takes in a numpy array and returns a numpy array.
     """
     self.x = x
-    return output
+    return np.tanh(x)
 
   def ReLU(self, x):
     """
     Write the code for ReLU activation function that takes in a numpy array and returns a numpy array.
     """
     self.x = x
-    return output
+    return x * (x > 0)
+
 
   def grad_sigmoid(self):
     """
     Write the code for gradient through sigmoid activation function that takes in a numpy array and returns a numpy array.
     """
+    grad = (1 / (1 + np.exp(-self.x)))*(1-(1 / (1 + np.exp(-self.x))))
     return grad
 
   def grad_tanh(self):
     """
     Write the code for gradient through tanh activation function that takes in a numpy array and returns a numpy array.
     """
+    grad = 1.0 - np.tanh(self.x)**2
     return grad
 
   def grad_ReLU(self):
     """
     Write the code for gradient through ReLU activation function that takes in a numpy array and returns a numpy array.
     """
-    return grad
+    return 1.0 * (self.x > 0)
 
 
 class Layer():
@@ -134,6 +141,9 @@ class Layer():
     Write the code for forward pass through a layer. Do not apply activation function here.
     """
     self.x = x
+    W = np.concatenate((self.b, self.w), axis=1)
+    X = np.concatenate((np.ones((1, out_units)).astype(np.float32), self.x), axis=1)
+    self.a = np.dot(X, W)
     return self.a
 
   def backward_pass(self, delta):
@@ -141,6 +151,7 @@ class Layer():
     Write the code for backward pass. This takes in gradient from its next layer as input,
     computes gradient for its weights and the delta to pass to its previous layers.
     """
+    
     return self.d_x
 
 
@@ -161,12 +172,17 @@ class Neuralnetwork():
     If targets == None, loss should be None. If not, then return the loss computed.
     """
     self.x = x
+    if targets == None:
+        loss = None
+    else:
+        loss = self.loss_func(,targets)
     return loss, self.y
 
   def loss_func(self, logits, targets):
     '''
     find cross entropy loss between logits and targets
     '''
+    output = -np.average(targets * np.log(logits))
     return output
 
   def backward_pass(self):

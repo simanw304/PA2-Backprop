@@ -4,7 +4,7 @@ import pickle
 
 config = {}
 config['layer_specs'] = [784, 100, 100, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
-config['activation'] = 'sigmoid' # Takes values 'sigmoid', 'tanh' or 'ReLU'; denotes activation function for hidden layers
+config['activation'] = 'tanh' #Takes values 'sigmoid', 'tanh' or 'ReLU'; denotes activation function for hidden layers
 config['batch_size'] = 1000  # Number of training samples per batch to be passed to network
 config['epochs'] = 50  # Number of epochs to train the model
 config['early_stop'] = True  # Implement early stopping or not
@@ -68,7 +68,7 @@ class Activation:
       return self.tanh(a)
 
     elif self.activation_type == "ReLU":
-      return self.relu(a)
+      return self.ReLU(a)
 
   def backward_pass(self, delta):
     if self.activation_type == "sigmoid":
@@ -79,8 +79,10 @@ class Activation:
 
     elif self.activation_type == "ReLU":
       grad = self.grad_ReLU()
-
-    return grad * delta
+    if type(delta) is not float:
+        return (grad * delta.T).T
+    else:
+        return grad * delta
 
   def sigmoid(self, x):
     """
@@ -141,8 +143,8 @@ class Layer():
     Write the code for forward pass through a layer. Do not apply activation function here.
     """
     self.x = x
-    W = np.concatenate((self.b, self.w), axis=1)
-    X = np.concatenate((np.ones((1, out_units)).astype(np.float32), self.x), axis=1)
+    W = np.concatenate((self.b, self.w), axis=0)
+    X = np.concatenate((np.ones((1, x.shape[0])).astype(np.float32), self.x), axis=1)
     self.a = np.dot(X, W)
     return self.a
 
@@ -151,7 +153,9 @@ class Layer():
     Write the code for backward pass. This takes in gradient from its next layer as input,
     computes gradient for its weights and the delta to pass to its previous layers.
     """
-    
+    self.d_w = self.x.T.dot(delta.T)
+    self.d_b = delta.T
+    self.d_x = self.w.dot(delta) #Bias not involved because bias has no input!
     return self.d_x
 
 
@@ -172,10 +176,15 @@ class Neuralnetwork():
     If targets == None, loss should be None. If not, then return the loss computed.
     """
     self.x = x
-    if targets == None:
+    self.targets = targets
+    output = self.x
+    if targets.all():
         loss = None
     else:
-        loss = self.loss_func(,targets)
+        for i in range(len(self.layers)):
+            output = self.layers[i].forward_pass(output)
+        self.y = softmax(output)
+        loss = self.loss_func(self.y,targets)
     return loss, self.y
 
   def loss_func(self, logits, targets):
@@ -190,6 +199,19 @@ class Neuralnetwork():
     implement the backward pass for the whole network.
     hint - use previously built functions.
     '''
+    delta = (self.targets - self.y).T
+
+    for i in reversed(range(len(self.layers))):
+        delta = self.layers[i].backward_pass(delta)
+        if isinstance(self.layers[i],Layer):
+
+    #changing weights
+    for layer in self.layers:
+        alpha = config['learning_rate']
+        if isinstance(layer,Layer):
+            layer.w = layer.w - alpha * layer.d_w
+            layer.b = layer.b - alpha * layer.d_b
+
 
 
 def trainer(model, X_train, y_train, X_valid, y_valid, config):

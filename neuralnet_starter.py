@@ -1,10 +1,11 @@
 import numpy as np
 import pickle
 import copy
+import matplotlib.pyplot as plt
 
 
 config = {}
-config['layer_specs'] = [784, 100, 100, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
+config['layer_specs'] = [784, 100, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
 config['activation'] = 'sigmoid' #Takes values 'sigmoid', 'tanh' or 'ReLU'; denotes activation function for hidden layers
 config['batch_size'] = 5000  # Number of training samples per batch to be passed to network
 config['epochs'] = 20  # Number of epochs to train the model
@@ -238,17 +239,20 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
                 cost_ib,logits = model.forward_pass(X_ib,y_ib)
                 cost += cost_ib
                 model.backward_pass()
-            cost_array.append(cost)
-            print("Epoch {}, training cost={}".format(epoch,cost))
+            cost_array.append(cost/len(X_train))
+            print("Epoch {}, training cost={}".format(epoch,cost/len(X_train)))
             hocost,logits = model.forward_pass(X_valid,y_valid)
-            hocost_array.append(hocost)
-            print("Epoch {}, holdout cost={}".format(epoch,hocost))
+            hocost_array.append(hocost/len(X_valid))
+            print("Epoch {}, holdout cost={}".format(epoch,hocost/len(X_valid)))
             #cost_array[i] /= len(X)
             if hocost < curr_ho_cost:
                 best_model = copy.deepcopy(model);
                 curr_ho_cost = hocost;
             if sorted(hocost_array[-5:])  == hocost_array[-5:] and epoch > 5 and config['early_stop']:
                 break;
+        plt.figure(1)
+        plt.plot(range(1,config['epochs']+1),cost_array,'b',label = "Train")
+        plt.plot(range(1,config['epochs']+1),hocost_array,'g',label = "Holdout")
         model = copy.deepcopy(best_model)
         print(hocost_array)
 
@@ -278,4 +282,5 @@ if __name__ == "__main__":
   X_test, y_test = load_data(test_data_fname)
   trainer(model, X_train, y_train, X_valid, y_valid, config)
   test_acc = test(model, X_test, y_test, config)
+  print(test_acc)
 

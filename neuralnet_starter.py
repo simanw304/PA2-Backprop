@@ -4,16 +4,16 @@ import copy
 
 
 config = {}
-config['layer_specs'] = [784, 100, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
+config['layer_specs'] = [784, 100, 100, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
 config['activation'] = 'sigmoid' #Takes values 'sigmoid', 'tanh' or 'ReLU'; denotes activation function for hidden layers
 config['batch_size'] = 5000  # Number of training samples per batch to be passed to network
-config['epochs'] = 50  # Number of epochs to train the model
-config['early_stop'] = False  # Implement early stopping or not
+config['epochs'] = 20  # Number of epochs to train the model
+config['early_stop'] = True  # Implement early stopping or not
 config['early_stop_epoch'] = 5  # Number of epochs for which validation loss increases to be counted as overfitting
 config['L2_penalty'] = 0  # Regularization constant
 config['momentum'] = False  # Denotes if momentum is to be applied or not
 config['momentum_gamma'] = 0.9  # Denotes the constant 'gamma' in momentum expression
-config['learning_rate'] =  1e-5 # Learning rate of gradient descent algorithm
+config['learning_rate'] =  0.0001 # Learning rate of gradient descent algorithm
 
 def softmax(x):
   """
@@ -193,7 +193,6 @@ class Neuralnetwork():
     find cross entropy loss between logits and targets
     '''
     #print(logits.shape,targets.shape)
-    print(targets[0])
     output = -np.sum(targets * np.log(logits))
     return output
 
@@ -211,8 +210,8 @@ class Neuralnetwork():
     for layer in self.layers:
         alpha = config['learning_rate']
         if isinstance(layer,Layer):
-            layer.w = layer.w - alpha * layer.d_w
-            layer.b = layer.b - alpha * layer.d_b
+            layer.w = layer.w + alpha * layer.d_w
+            layer.b = layer.b + alpha * layer.d_b
 
 
 
@@ -243,6 +242,7 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
             print("Epoch {}, training cost={}".format(epoch,cost))
             hocost,logits = model.forward_pass(X_valid,y_valid)
             hocost_array.append(hocost)
+            print("Epoch {}, holdout cost={}".format(epoch,hocost))
             #cost_array[i] /= len(X)
             if hocost < curr_ho_cost:
                 best_model = copy.deepcopy(model);
@@ -250,6 +250,7 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
             if sorted(hocost_array[-5:])  == hocost_array[-5:] and epoch > 5 and config['early_stop']:
                 break;
         model = copy.deepcopy(best_model)
+        print(hocost_array)
 
 
 

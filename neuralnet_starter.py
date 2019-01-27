@@ -204,7 +204,6 @@ class Neuralnetwork():
 
     for i in reversed(range(len(self.layers))):
         delta = self.layers[i].backward_pass(delta)
-        if isinstance(self.layers[i],Layer):
 
     #changing weights
     for layer in self.layers:
@@ -216,10 +215,10 @@ class Neuralnetwork():
 
 
 def trainer(model, X_train, y_train, X_valid, y_valid, config):
-  """
+        """
   Write the code to train the network. Use values from config to set parameters
   such as L2 penalty, number of epochs, momentum, etc.
-  """
+        """
         y = onehotencoding(y_train)
         yho = onehotencoding(y_valid)
         cost_array = []#np.zeros(config['epochs']);
@@ -247,7 +246,7 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
             if sorted(hocost[-5:])  == hocost[-5:]:
                 break;
         model = copy.deepcopy(best_model)
-  
+
 
 
 def test(model, X_test, y_test, config):

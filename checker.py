@@ -22,8 +22,8 @@ def main():
     act_sigmoid = neuralnet.Activation('sigmoid')
     act_tanh = neuralnet.Activation('tanh')
     act_ReLU = neuralnet.Activation('ReLU')
-    
-    
+
+
     out_sigmoid = act_sigmoid.forward_pass(x)
     err_sigmoid = np.sum(np.abs(benchmark_data['out_sigmoid'] - out_sigmoid))
     check_error(err_sigmoid, "Sigmoid Forward Pass")
@@ -49,7 +49,7 @@ def main():
     grad_ReLU = act_ReLU.backward_pass(1.0)
     err_ReLU_grad = np.sum(np.abs(benchmark_data['grad_ReLU'] - grad_ReLU))
     check_error(err_ReLU_grad, "ReLU Gradient")
-    
+
     np.random.seed(42)
     x_image = np.random.randn(1, 784)
 
@@ -74,18 +74,18 @@ def main():
             check_error(error_d_b, "Layer{} Bias Gradient".format(layer_no))
 
 
-    
+
     # print(err_sigmoid)
     # print(err_tanh)
     # print(err_ReLU)
-  
-  
+
+
 def check_error(error, msg):
     if error < 1e-6:
         print("{} is CORRECT".format(msg))
     else:
         print("{} is WRONG".format(msg))
-  
-  
+
+
 if __name__ == '__main__':
   main()

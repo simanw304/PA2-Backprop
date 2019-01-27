@@ -4,16 +4,16 @@ import copy
 
 
 config = {}
-config['layer_specs'] = [784, 100, 100, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
-config['activation'] = 'tanh' #Takes values 'sigmoid', 'tanh' or 'ReLU'; denotes activation function for hidden layers
-config['batch_size'] = 1000  # Number of training samples per batch to be passed to network
+config['layer_specs'] = [784, 100, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
+config['activation'] = 'sigmoid' #Takes values 'sigmoid', 'tanh' or 'ReLU'; denotes activation function for hidden layers
+config['batch_size'] = 5000  # Number of training samples per batch to be passed to network
 config['epochs'] = 50  # Number of epochs to train the model
-config['early_stop'] = True  # Implement early stopping or not
+config['early_stop'] = False  # Implement early stopping or not
 config['early_stop_epoch'] = 5  # Number of epochs for which validation loss increases to be counted as overfitting
 config['L2_penalty'] = 0  # Regularization constant
 config['momentum'] = False  # Denotes if momentum is to be applied or not
 config['momentum_gamma'] = 0.9  # Denotes the constant 'gamma' in momentum expression
-config['learning_rate'] = 0.0001 # Learning rate of gradient descent algorithm
+config['learning_rate'] =  1e-5 # Learning rate of gradient descent algorithm
 
 def softmax(x):
   """
@@ -37,7 +37,7 @@ def onehotencoding(labels):
     onehotCoded = list()
     for value in labels:
         letter = [0 for i in range(10)]
-        letter[value] = 1
+        letter[int(value)] = 1
         onehotCoded.append(letter)
     return np.array(onehotCoded)
 
@@ -132,7 +132,7 @@ class Layer():
   def __init__(self, in_units, out_units):
     np.random.seed(42)
     self.w = np.random.randn(in_units, out_units)  # Weight matrix
-    self.b = np.zeros((1, out_units)).astype(np.float32)  # Bias
+    self.b = np.zeros((1, out_units)).astype(np.float64)  # Bias
     self.x = None  # Save the input to forward_pass in this
     self.a = None  # Save the output of forward pass in this (without activation)
     self.d_x = None  # Save the gradient w.r.t x in this
@@ -145,7 +145,7 @@ class Layer():
     """
     self.x = x
     W = np.concatenate((self.b, self.w), axis=0)
-    X = np.concatenate((np.ones((1, x.shape[0])).astype(np.float32), self.x), axis=1)
+    X = np.concatenate((np.ones(( x.shape[0],1)).astype(np.float32), self.x), axis=1)
     self.a = np.dot(X, W)
     return self.a
 
@@ -155,7 +155,7 @@ class Layer():
     computes gradient for its weights and the delta to pass to its previous layers.
     """
     self.d_w = self.x.T.dot(delta.T)
-    self.d_b = delta.T
+    self.d_b = np.ones((1,self.x.shape[0])).dot(delta.T)
     self.d_x = self.w.dot(delta) #Bias not involved because bias has no input!
     return self.d_x
 
@@ -192,7 +192,9 @@ class Neuralnetwork():
     '''
     find cross entropy loss between logits and targets
     '''
-    output = -np.average(targets * np.log(logits))
+    #print(logits.shape,targets.shape)
+    print(targets[0])
+    output = -np.sum(targets * np.log(logits))
     return output
 
   def backward_pass(self):
@@ -225,25 +227,27 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
         #cost_array = []
         hocost_array = []#np.zeros(config['epochs']);
         curr_ho_cost = np.inf
+        best_model = None
         for epoch in range(0,config['epochs']):
             cost = 0
             hocost = 0
-            #print(random_order)
             batch_size = config['batch_size']
-            for i in range(len(X_train)/batch_size):
+            for i in range(len(X_train)//batch_size):
                 X_ib = X_train[i*batch_size:(i+1)*batch_size,:]
+                #print("input size=",X_ib.shape)
                 y_ib = y_train[i*batch_size:(i+1)*batch_size,:]
                 cost_ib,logits = model.forward_pass(X_ib,y_ib)
                 cost += cost_ib
                 model.backward_pass()
             cost_array.append(cost)
+            print("Epoch {}, training cost={}".format(epoch,cost))
             hocost,logits = model.forward_pass(X_valid,y_valid)
             hocost_array.append(hocost)
             #cost_array[i] /= len(X)
             if hocost < curr_ho_cost:
                 best_model = copy.deepcopy(model);
                 curr_ho_cost = hocost;
-            if sorted(hocost[-5:])  == hocost[-5:]:
+            if sorted(hocost_array[-5:])  == hocost_array[-5:] and epoch > 5 and config['early_stop']:
                 break;
         model = copy.deepcopy(best_model)
 

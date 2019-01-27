@@ -219,8 +219,8 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
   Write the code to train the network. Use values from config to set parameters
   such as L2 penalty, number of epochs, momentum, etc.
         """
-        y = onehotencoding(y_train)
-        yho = onehotencoding(y_valid)
+        #y = onehotencoding(y_train)
+        #yho = onehotencoding(y_valid)
         cost_array = []#np.zeros(config['epochs']);
         #cost_array = []
         hocost_array = []#np.zeros(config['epochs']);
@@ -230,14 +230,14 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
             hocost = 0
             #print(random_order)
             batch_size = config['batch_size']
-            for i in range(len(x_train)/batch_size):
+            for i in range(len(X_train)/batch_size):
                 X_ib = X_train[i*batch_size:(i+1)*batch_size,:]
-                y_ib = y[i*batch_size:(i+1)*batch_size,:]
+                y_ib = y_train[i*batch_size:(i+1)*batch_size,:]
                 cost_ib,logits = model.forward_pass(X_ib,y_ib)
                 cost += cost_ib
                 model.backward_pass()
             cost_array.append(cost)
-            hocost,logits = model.forward_pass(X_valid,yho)
+            hocost,logits = model.forward_pass(X_valid,y_valid)
             hocost_array.append(hocost)
             #cost_array[i] /= len(X)
             if hocost < curr_ho_cost:
@@ -253,10 +253,11 @@ def test(model, X_test, y_test, config):
   """
   Write code to run the model on the data passed as input and return accuracy.
   """
-  ytest = onehotencoding(y_test)
-  cost_test,logits = model.forward_pass(X_test,ytest)
+  #ytest = onehotencoding(y_test)
+  cost_test,logits = model.forward_pass(X_test,y_test)
   predicted = np.argmax(logits,axis = 1)
-  accuracy = np.sum(predicted == y_test)/len(y_test)
+  test = np.argmax(y_test,axis = 1)
+  accuracy = np.sum(predicted == test)/len(test)
   return accuracy
 
 

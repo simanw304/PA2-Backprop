@@ -193,7 +193,6 @@ class Neuralnetwork():
     '''
     find cross entropy loss between logits and targets
     '''
-    #print(logits.shape,targets.shape)
     output = -np.sum(targets * np.log(logits))
     return output
 
@@ -236,7 +235,6 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
             batch_size = config['batch_size']
             for i in range(len(X_train)//batch_size):
                 X_ib = X_train[i*batch_size:(i+1)*batch_size,:]
-                #print("input size=",X_ib.shape)
                 y_ib = y_train[i*batch_size:(i+1)*batch_size,:]
                 cost_ib,logits = model.forward_pass(X_ib,y_ib)
                 cost += cost_ib
@@ -245,7 +243,6 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
                 if epoch == 0 and i == 0 and config['momentum']:
                     for layer in model.layers:
                         if isinstance(layer,Layer):
-                            print(layer.w.shape)
                             delta_w.append(np.zeros(layer.w.shape))
                             delta_b.append(np.zeros(layer.b.shape))
 

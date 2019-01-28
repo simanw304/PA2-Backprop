@@ -241,7 +241,7 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
                 cost_ib,logits = model.forward_pass(X_ib,y_ib)
                 cost += cost_ib
 
-                #First run - Initialize prev_weights and prev_biases
+                #First run - Initialize delta_w and delta_b
                 if epoch == 0 and i == 0 and config['momentum']:
                     for layer in model.layers:
                         if isinstance(layer,Layer):
@@ -281,6 +281,7 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
         plt.figure(1)
         plt.plot(range(1,config['epochs']+1),cost_array,'b',label = "Train")
         plt.plot(range(1,config['epochs']+1),hocost_array,'g',label = "Holdout")
+        plt.legend()
         model = copy.deepcopy(best_model)
         print(hocost_array)
 

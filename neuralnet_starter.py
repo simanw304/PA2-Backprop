@@ -8,7 +8,7 @@ config = {}
 config['layer_specs'] = [784, 100, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
 config['activation'] = 'sigmoid' #Takes values 'sigmoid', 'tanh' or 'ReLU'; denotes activation function for hidden layers
 config['batch_size'] = 5000  # Number of training samples per batch to be passed to network
-config['epochs'] = 20  # Number of epochs to train the model
+config['epochs'] = 50  # Number of epochs to train the model
 config['early_stop'] = True  # Implement early stopping or not
 config['early_stop_epoch'] = 5  # Number of epochs for which validation loss increases to be counted as overfitting
 config['L2_penalty'] = 0  # Regularization constant
@@ -208,11 +208,11 @@ class Neuralnetwork():
         delta = self.layers[i].backward_pass(delta)
 
     #changing weights
-    for layer in self.layers:
-        alpha = config['learning_rate']
-        if isinstance(layer,Layer):
-            layer.w = layer.w + alpha * layer.d_w
-            layer.b = layer.b + alpha * layer.d_b
+    #for layer in self.layers:
+     #   alpha = config['learning_rate']
+     #   if isinstance(layer,Layer):
+     #       layer.w = layer.w + alpha * layer.d_w
+     #       layer.b = layer.b + alpha * layer.d_b
 
 
 
@@ -228,6 +228,8 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
         hocost_array = []#np.zeros(config['epochs']);
         curr_ho_cost = np.inf
         best_model = None
+        delta_w = []
+        delta_b = []
         for epoch in range(0,config['epochs']):
             cost = 0
             hocost = 0
@@ -238,18 +240,44 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
                 y_ib = y_train[i*batch_size:(i+1)*batch_size,:]
                 cost_ib,logits = model.forward_pass(X_ib,y_ib)
                 cost += cost_ib
+
+                #First run - Initialize prev_weights and prev_biases
+                if epoch == 0 and i == 0 and config['momentum']:
+                    for layer in model.layers:
+                        if isinstance(layer,Layer):
+                            print(layer.w.shape)
+                            delta_w.append(np.zeros(layer.w.shape))
+                            delta_b.append(np.zeros(layer.b.shape))
+
                 model.backward_pass()
+                #changing weights
+                alpha = config['learning_rate']
+                mom = config['momentum_gamma']
+                counter = 0 #too lazy to change the for loop
+                for layer in model.layers:
+                    if isinstance(layer,Layer):
+                        layer.w = layer.w + alpha * layer.d_w
+                        layer.b = layer.b + alpha * layer.d_b
+                        if config['momentum']:
+                            layer.w += mom * delta_w[counter]
+                            layer.b += mom * delta_b[counter]
+                            delta_w[counter] = mom * delta_w[counter] + alpha * layer.d_w
+                            delta_b[counter] = mom * delta_b[counter] + alpha * layer.d_b
+
+                        counter += 1
+
             cost_array.append(cost/len(X_train))
             print("Epoch {}, training cost={}".format(epoch,cost/len(X_train)))
             hocost,logits = model.forward_pass(X_valid,y_valid)
             hocost_array.append(hocost/len(X_valid))
             print("Epoch {}, holdout cost={}".format(epoch,hocost/len(X_valid)))
             #cost_array[i] /= len(X)
+            threshold_epoch = config['early_stop_epoch']
             if hocost < curr_ho_cost:
-                best_model = copy.deepcopy(model);
-                curr_ho_cost = hocost;
-            if sorted(hocost_array[-5:])  == hocost_array[-5:] and epoch > 5 and config['early_stop']:
-                break;
+                best_model = copy.deepcopy(model)
+                curr_ho_cost = hocost
+            if sorted(hocost_array[-threshold_epoch:])  == hocost_array[-threshold_epoch:] and epoch >= threshold_epoch and config['early_stop']:
+                break
         plt.figure(1)
         plt.plot(range(1,config['epochs']+1),cost_array,'b',label = "Train")
         plt.plot(range(1,config['epochs']+1),hocost_array,'g',label = "Holdout")
@@ -283,4 +311,4 @@ if __name__ == "__main__":
   trainer(model, X_train, y_train, X_valid, y_valid, config)
   test_acc = test(model, X_test, y_test, config)
   print(test_acc)
-
+  plt.show()

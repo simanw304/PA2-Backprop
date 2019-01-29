@@ -11,7 +11,7 @@ config['batch_size'] = 5000  # Number of training samples per batch to be passed
 config['epochs'] = 50  # Number of epochs to train the model
 config['early_stop'] = True  # Implement early stopping or not
 config['early_stop_epoch'] = 5  # Number of epochs for which validation loss increases to be counted as overfitting
-config['L2_penalty'] = 0  # Regularization constant
+config['L2_penalty'] = 100  # Regularization constant
 config['momentum'] = True  # Denotes if momentum is to be applied or not
 config['momentum_gamma'] = 0.9  # Denotes the constant 'gamma' in momentum expression
 config['learning_rate'] =  0.0001 # Learning rate of gradient descent algorithm
@@ -239,12 +239,21 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
                 cost_ib,logits = model.forward_pass(X_ib,y_ib)
                 cost += cost_ib
 
-                #First run - Initialize delta_w and delta_b
-                if epoch == 0 and i == 0 and config['momentum']:
-                    for layer in model.layers:
-                        if isinstance(layer,Layer):
+                #Common loop for momentum and L2 penalty
+                L2_cost = 0
+                Lambda = config['L2_penalty']
+                for layer in model.layers:
+                    if isinstance(layer,Layer):
+                        #Initialize delta_w and delta_b for momentum
+                        if epoch == 0 and i == 0 and config['momentum']:
                             delta_w.append(np.zeros(layer.w.shape))
                             delta_b.append(np.zeros(layer.b.shape))
+
+                        #L2 penalty - only the weights, no  bias involved
+                        if Lambda:
+                            L2_cost += np.trace(layer.w.dot(layer.w.T))
+
+                cost += Lambda * L2_cost/(2*len(X_ib))
 
                 model.backward_pass()
                 #changing weights
@@ -254,11 +263,16 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
                 for layer in model.layers:
                     if isinstance(layer,Layer):
                         layer.w = layer.w + alpha * layer.d_w
+                        if Lambda:
+                            layer.w -= Lambda/len(X_ib) * layer.w
+
                         layer.b = layer.b + alpha * layer.d_b
                         if config['momentum']:
                             layer.w += mom * delta_w[counter]
                             layer.b += mom * delta_b[counter]
                             delta_w[counter] = mom * delta_w[counter] + alpha * layer.d_w
+                            if Lambda:
+                                delta_w[counter] -= Lambda/len(X_ib) * layer.w
                             delta_b[counter] = mom * delta_b[counter] + alpha * layer.d_b
 
                         counter += 1
